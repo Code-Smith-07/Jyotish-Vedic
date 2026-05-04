@@ -11,6 +11,8 @@ import { generateNorthIndianChart, generateSouthIndianChart } from './charts/cha
 import { searchCity, INDIAN_CITIES } from './utils/geocoding.js';
 import icons, { icon } from './utils/icons.js';
 import { PLANETS, PLANET_ORDER, RASHIS, DIVISIONAL_CHARTS, DASHA_YEARS, GEMSTONES, HOUSE_SIGNIFICATIONS } from './core/constants.js';
+import { generateFullReport } from './core/interpretations/index.js';
+import { downloadKundliPDF } from './utils/pdfExport.js';
 
 let chartData = null;
 let dashaData = null;
@@ -20,6 +22,7 @@ const app = document.getElementById('app');
 
 const TAB_ICONS = {
   chart: icons.chart,
+  report: icons.book,
   planets: icons.planet,
   dasha: icons.clock,
   panchang: icons.diya,
@@ -31,7 +34,7 @@ const TAB_ICONS = {
   remedies: icons.gem,
 };
 const TAB_LABELS = {
-  chart: 'Chart', planets: 'Planets', dasha: 'Dasha', panchang: 'Panchang',
+  chart: 'Chart', report: 'Life Report', planets: 'Planets', dasha: 'Dasha', panchang: 'Panchang',
   divisional: 'Vargas', yogas: 'Yogas', doshas: 'Doshas',
   predictions: 'Predictions', ashtakavarga: 'Ashtakavarga', remedies: 'Remedies',
 };
@@ -124,10 +127,17 @@ function renderResults() {
   const area = document.getElementById('results-area');
   const tabKeys = Object.keys(TAB_ICONS);
   area.innerHTML = `
-    <div class="tabs" id="main-tabs">${tabKeys.map(t =>
-      `<button class="tab ${currentTab === t ? 'active' : ''}" data-tab="${t}"><span class="tab-icon">${TAB_ICONS[t]}</span><span class="tab-label">${TAB_LABELS[t]}</span></button>`
-    ).join('')}</div>
+    <div class="results-toolbar">
+      <div class="tabs" id="main-tabs">${tabKeys.map(t =>
+        `<button class="tab ${currentTab === t ? 'active' : ''}" data-tab="${t}"><span class="tab-icon">${TAB_ICONS[t]}</span><span class="tab-label">${TAB_LABELS[t]}</span></button>`
+      ).join('')}</div>
+      <button class="btn btn-pdf" id="download-pdf-btn">${icons.generate} Download PDF</button>
+    </div>
     <div id="tab-content" class="fade-in">${renderTabContent()}</div>`;
+  document.getElementById('download-pdf-btn')?.addEventListener('click', () => {
+    const name = document.getElementById('name')?.value || 'Native';
+    downloadKundliPDF(chartData, dashaData, name);
+  });
   area.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', function(e) {
       e.preventDefault();
@@ -139,7 +149,7 @@ function renderResults() {
 }
 
 function renderTabContent() {
-  const renderers = { chart: renderChartTab, planets: renderPlanetsTab, dasha: renderDashaTab, panchang: renderPanchangTab, divisional: renderDivisionalTab, yogas: renderYogasTab, doshas: renderDoshasTab, predictions: renderPredictionsTab, ashtakavarga: renderAshtakavargaTab, remedies: renderRemediesTab };
+  const renderers = { chart: renderChartTab, report: renderReportTab, planets: renderPlanetsTab, dasha: renderDashaTab, panchang: renderPanchangTab, divisional: renderDivisionalTab, yogas: renderYogasTab, doshas: renderDoshasTab, predictions: renderPredictionsTab, ashtakavarga: renderAshtakavargaTab, remedies: renderRemediesTab };
   return (renderers[currentTab] || (() => ''))();
 }
 
@@ -324,6 +334,82 @@ function renderRemediesTab() {
   }
   html += '</div></div></div>';
   return html;
+}
+
+function renderReportTab() {
+  const report = generateFullReport(chartData, dashaData);
+  let html = '';
+
+  // Ascendant Profile
+  if (report.ascendant) {
+    const a = report.ascendant;
+    html += `<div class="card"><div class="card-header"><span class="icon">${icons.chart}</span><h3>Your Ascendant — ${a.sign} (${a.title})</h3></div>
+      <div class="report-sections stagger">
+        <div class="report-section"><h4>${icon('planet', 16)} Personality</h4><p>${a.personality}</p></div>
+        <div class="report-section"><h4>${icon('planet', 16)} Appearance</h4><p>${a.appearance}</p></div>
+        <div class="report-section"><h4>${icon('planet', 16)} Nature</h4><p>${a.nature}</p></div>
+        <div class="report-section"><h4>${icon('chart', 16)} Career Inclinations</h4><p>${a.career}</p></div>
+        <div class="report-section"><h4>${icon('warning', 16)} Health Profile</h4><p>${a.health}</p></div>
+        <div class="report-section"><h4>${icon('sparkle', 16)} Relationships</h4><p>${a.relationships}</p></div>
+      </div></div>`;
+  }
+
+  // Nakshatra Phal
+  if (report.nakshatra) {
+    const n = report.nakshatra;
+    html += `<div class="card"><div class="card-header"><span class="icon">${icons.diya}</span><h3>Nakshatra Phal — ${n.nakshatra}</h3></div>
+      <p class="text-muted" style="margin-bottom:12px">Deity: ${n.deity} | Symbol: ${n.symbol} | Moon in ${n.moonSign} | Pada ${n.pada}</p>
+      <div class="report-sections stagger">
+        <div class="report-section"><h4>Personality</h4><p>${n.personality}</p></div>
+        <div class="report-section"><h4>Key Traits</h4><p>${n.traits}</p></div>
+        <div class="report-section"><h4>Life Path</h4><p>${n.life}</p></div>
+      </div></div>`;
+  }
+
+  // Life Predictions
+  if (report.lifePredictions) {
+    const lp = report.lifePredictions;
+    html += `<div class="card"><div class="card-header"><span class="icon">${icons.crystal}</span><h3>Life Predictions — ${lp.moonSign} (${lp.moonSanskrit}) Moon</h3></div>
+      <div class="report-sections stagger">`;
+    for (const sec of lp.sections) {
+      html += `<div class="report-section"><h4>${sec.title}</h4><p>${sec.text}</p></div>`;
+    }
+    html += '</div></div>';
+  }
+
+  // Dasha Predictions
+  if (report.dashaPredictions && report.dashaPredictions.length > 0) {
+    html += `<div class="card"><div class="card-header"><span class="icon">${icons.clock}</span><h3>Vimshottari Mahadasha Phal</h3></div>
+      <div class="report-sections stagger">`;
+    for (const dp of report.dashaPredictions) {
+      const dateRange = `${formatDashaDate(dp.startDate)} – ${formatDashaDate(dp.endDate)}`;
+      html += `<div class="report-section dasha-prediction ${dp.isActive ? 'dasha-active' : ''}">
+        <h4 style="color:${PLANETS[dp.lord]?.color || '#f1f5f9'}">${dp.lordName} Mahadasha ${dp.isActive ? '<span class="badge badge-success">Current</span>' : ''}
+          <span class="dates" style="font-weight:400;font-size:0.85rem;color:#94a3b8"> (${dateRange})</span></h4>
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:4px">${dp.lordName} in ${dp.sign} in your ${dp.house}${ordinal(dp.house)} house</p>
+        <p>${dp.prediction}</p></div>`;
+    }
+    html += '</div></div>';
+  }
+
+  // Planetary Insights
+  if (report.planetaryInsights && report.planetaryInsights.length > 0) {
+    html += `<div class="card"><div class="card-header"><span class="icon">${icons.sparkle}</span><h3>Planetary Insights & Dignities</h3></div>
+      <div class="report-sections stagger">`;
+    for (const ins of report.planetaryInsights) {
+      html += `<div class="report-section"><h4>${ins.planet} (${ins.sanskrit}) — House ${ins.house}, ${ins.sign}</h4>
+        ${ins.notes.map(n => `<p>${n}</p>`).join('')}</div>`;
+    }
+    html += '</div></div>';
+  }
+
+  return html;
+}
+
+function ordinal(n) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return (s[(v-20)%10] || s[v] || s[0]);
 }
 
 renderApp();

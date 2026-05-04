@@ -156,7 +156,7 @@ a { color: var(--accent-blue); text-decoration: none; }
 .card-header .icon { font-size: 1.4rem; }
 
 /* ============ FORM ============ */
-.birth-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.birth-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-group label {
@@ -413,3 +413,45 @@ a { color: var(--accent-blue); text-decoration: none; }
 .mt-2 { margin-top: 16px; }
 .mb-1 { margin-bottom: 8px; }
 .mb-2 { margin-bottom: 16px; }
+
+/* ============ RESULTS TOOLBAR ============ */
+.results-toolbar {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.results-toolbar .tabs { flex: 1; margin-bottom: 0; }
+.btn-pdf {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 22px; border: none; border-radius: var(--radius-sm);
+  font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: all 0.3s; letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: #fff; white-space: nowrap;
+}
+.btn-pdf:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.35);
+}
+.btn-pdf:active { transform: translateY(0); }
+.btn-pdf .icon-svg { width: 16px; height: 16px; }
+
+/* ============ REPORT SECTIONS ============ */
+.report-sections { display: flex; flex-direction: column; gap: 14px; }
+.report-section {
+  padding: 16px 20px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--bg-tertiary);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.report-section:hover { border-color: var(--border-hover); box-shadow: 0 2px 12px rgba(245,158,11,0.06); }
+.report-section h4 {
+  font-size: 0.95rem; color: var(--accent-gold); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.report-section h4 .icon-svg { width: 16px; height: 16px; }
+.report-section p {
+  font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7;
+}
+.report-section.dasha-prediction { border-left: 3px solid var(--border); }
+.report-section.dasha-active {
+  border-left: 3px solid var(--accent-gold);
+  background: rgba(245, 158, 11, 0.04);
+}
